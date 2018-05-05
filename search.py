@@ -114,5 +114,31 @@ def search(labeling, adjacency, visited, objective):
                     labeling[j_district, j] = 1
     return best_labeling
 
+def neighbor(labeling, adjacency):
+    n_districts, n_blocks = labeling.shape
+
+    transitions = []
+
+    for i in range(n_blocks):
+            i_district = labeling[:, i].nonzero()[0][0]
+            for j in adjacency[i, :].nonzero()[0]:
+                assert i != j
+                j_district = labeling[:, j].nonzero()[0][0]
+                if i_district != j_district:
+                    #try to grow i into j
+                    labeling[j_district, j] = 0
+                    labeling[i_district, j] = 1
+
+                    if labeling[j_district, :].sum() >= 1:
+                        # TODO here for debug
+                        validate_labeling(labeling)
+                        if all_districts_connected(labeling, adjacency):
+                            transitions.append((j, j_district, i_district))
+
+                    labeling[i_district, j] = 0
+                    labeling[j_district, j] = 1
+    return transitions
+
+
 def label_hash(labeling):
     return labeling.data.tobytes()
