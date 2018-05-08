@@ -31,6 +31,7 @@ def validate_labeling(labeling):
     assert (labeling.sum(axis=0) == 1).all()
     assert (labeling.sum(axis=1) >= 1).all()
 
+"""
 def build_initial_assignment(adjacency, populations, n_districts):
     n_blocks = adjacency.shape[0]
     assert n_blocks >= n_districts
@@ -39,7 +40,7 @@ def build_initial_assignment(adjacency, populations, n_districts):
     district = 0
     while not (labels.any(axis=0) == 1).all():
         # find the largest unlabeled block
-        i = ((~labels.any(axis=0)) * populations).argmax()
+        i = ((~labels.any(axis=0)) * populations).argmin()
         current_population = populations[i]
         labels[district, i] = 1
 
@@ -51,11 +52,13 @@ def build_initial_assignment(adjacency, populations, n_districts):
             if n_blocks - labels.any(axis=0).sum() == n_districts - labels.any(axis=1).sum():
                 break
             # TODO seems sus
-            adj_unlab = adjacency[labels[district, :], :][0] & (~labels.any(axis=0))
+            print(adjacency[labels[district, :].nonzero()[0], :][0])
+            adj_unlab = adjacency[labels[district, :].nonzero()[0], :][0] & (~labels.any(axis=0))
+            #adj_unlab = adjacency[labels[district, :], :][0] & (~labels.any(axis=0))
             possible_pops = adj_unlab * populations * (populations <= avg_population - current_population)
-            if possible_pops.max() <= 0:
+            if possible_pops.min() <= 0:
                 break
-            j = possible_pops.argmax()
+            j = possible_pops.argmin()
             labels[district, j] = 1
             current_population += populations[j]
 
@@ -63,7 +66,32 @@ def build_initial_assignment(adjacency, populations, n_districts):
     assert district == n_districts
     validate_labeling(labels)
     return labels
-    
+"""
+
+def build_initial_assignment(adjacency, populations, n_districts):
+    n_blocks = adjacency.shape[0]
+    assert n_blocks >= n_districts
+    labels = np.zeros((n_districts, n_blocks), dtype=np.bool_)
+    q = [0]
+    visited = [0 for _ in range(n_blocks)]
+    visited[0] = 1
+    while len(q) > 0 and labels.any(axis=0).sum() <= n_blocks - n_districts:
+        u = q.pop(0)
+        labels[0, u] = 1
+
+        for v in adjacency[u, :].nonzero()[0]:
+            if not visited[v]:
+                visited[v] = 1
+                q.append(v)
+
+    for i, j in enumerate(np.argwhere(labels.any(axis=0) == False)):
+        labels[i+1, j] = 1
+
+    validate_labeling(labels)
+
+    return labels
+
+
 def all_districts_connected(labeling, adjacency):
     n_districts, n_blocks = labeling.shape
     
