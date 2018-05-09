@@ -41,3 +41,14 @@ def read_election_data():
             d, r, fips = row[1], row[2], row[10]
             fips_to_election_data[int(fips)] = (int(float(d)), int(float(r)))
     return fips_to_election_data
+
+def read_race_data():
+    fips_to_race_data = {}
+    with open('data/race_census_data.csv', 'r') as f:
+        reader = csv.reader(f)
+        it = iter(reader)
+        next(it)
+        for row in it:
+            fips, white, non_white, pct_white = row
+            fips_to_race_data[int(fips)] = pct_white
+    return fips_to_race_data

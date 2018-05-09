@@ -10,11 +10,21 @@ def pop_objective(labeling):
     average_population = populations.sum()/N_DISTRICTS
     return -10e-12 * ((pops_district - average_population)**2).sum()
 
+
+def objective(labeling):
+    # promote competitive elections
+    # push probs to 0.5
+    pops_district = np.matmul(labeling, populations)
+    dems_district = np.matmul(labeling, voter_data[0])
+    return -((binom.cdf(pops_district/2, pops_district, dems_district/pops_district) - 0.5) ** 2).sum()
+
+"""
 def objective(labeling):
     pops_district = np.matmul(labeling, populations)
-    dems_distrct = np.matmul(labeling, voter_data[0])
-    return (1 - binom.cdf(pops_district/2, pops_district, dems_distrct/pops_district)).sum()
+    dems_district = np.matmul(labeling, voter_data[0])
 
+    return -1e-8 * ((dems_district - 0.5*pops_district)**2).sum()
+"""
 
 adj, fips = build_state_adjacency_matrix(STATE)
 voter_data = build_voter_data(fips)
@@ -32,4 +42,4 @@ for t in TS:
 
     labeling = simulated_annealing(initial_labeling, adj, comb_objective)
 
-    np.save('runs/OH/sa-gerry-dem-%s.npy' % str(t), labeling)
+    np.save('runs/OH/sa-competitive-L2-binom-%s.npy' % str(t), labeling)

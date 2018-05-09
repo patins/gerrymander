@@ -1,10 +1,11 @@
-from parser import read_county_adjacency, read_election_data
+from parser import read_county_adjacency, read_election_data, read_race_data
 import numpy as np
 import math
 import random
 
 fips_to_county, fips_to_state, adjacent_counties = read_county_adjacency()
 election_data = read_election_data()
+race_data = read_race_data()
 
 def fips_for_state(state):
     return [fips for fips, s in fips_to_state.items() if s == state]
@@ -28,6 +29,12 @@ def build_voter_data(fips_set):
     for i, fips in enumerate(fips_set):
         voter_data[:, i] = election_data[fips]
     return voter_data
+
+def build_race_data(fips_set):
+    rd = np.zeros(len(fips_set), dtype=np.float32)
+    for i, fips in enumerate(fips_set):
+        rd[i] = race_data[fips]
+    return rd
 
 def validate_labeling(labeling):
     assert (labeling.sum(axis=0) == 1).all()
@@ -188,18 +195,24 @@ def simulated_annealing(initial_labeling, adjacency, objective):
     T = 1.0
     T_min = 0.000001
     alpha = 0.9
+    stop = False
 
-    while T > T_min:
+    while T > T_min and not stop:
         i = 1
         candidates = None
         while i <= 100:
             if candidates == None:
-                candidates = neighbor(labeling, adjacency)
+                try:
+                    candidates = neighbor(labeling, adjacency)
+                except KeyboardInterrupt:
+                    stop = True
+                    break
             new_labeling = random.choice(candidates)
             labeling[new_labeling[1], new_labeling[0]] = 0
             labeling[new_labeling[2], new_labeling[0]] = 1
             new_obj = objective(labeling)
-            ap = math.e ** ((new_obj - prev_obj)/T)
+            #ap = math.e ** ((new_obj - prev_obj)/T)
+            ap = 1/(1 + math.e ** ((-new_obj + prev_obj)/T))
             if ap > random.random():
                 print("SWITCH old %f new %f" % (prev_obj, new_obj))
                 prev_obj = new_obj
