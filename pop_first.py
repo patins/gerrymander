@@ -1,8 +1,8 @@
 from search import *
 import numpy as np
 
-STATE = 'NC'
-N_DISTRICTS = 13
+STATE = 'PA'
+N_DISTRICTS = 18
 
 def objective(labeling):
     pops_district = np.matmul(labeling, populations)
@@ -17,6 +17,6 @@ populations = voter_data.sum(axis=0)
 
 initial_labeling = build_initial_assignment(adj, populations, N_DISTRICTS)
 
-labeling = simulated_annealing(initial_labeling, adj, objective)
+labeling = greedy_search(initial_labeling, adj, objective)
 
-np.save('runs/NC/sa-population.npy', labeling)
+np.save('runs/PA/greedy-population.npy', labeling)

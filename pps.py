@@ -2,13 +2,13 @@ from search import *
 from scipy.stats import binom
 import numpy as np
 
-STATE = 'OH'
-N_DISTRICTS = 16
+STATE = 'PA'
+N_DISTRICTS = 18
 
 def pop_objective(labeling):
     pops_district = np.matmul(labeling, populations)
     average_population = populations.sum()/N_DISTRICTS
-    return -10e-9 * ((pops_district - average_population)**2).sum()
+    return -10e-12 * ((pops_district - average_population)**2).sum()
 
 def objective(labeling):
     pops_district = np.matmul(labeling, populations)
@@ -23,12 +23,14 @@ populations = voter_data.sum(axis=0)
 dems = voter_data[0].sum() / voter_data.sum()
 
 initial_labeling = build_initial_assignment(adj, populations, N_DISTRICTS)
-initial_labeling = np.load('runs/OH/sa-population.npy')
+initial_labeling = np.load('runs/PA/sa-population.npy')
 
-labeling = simulated_annealing(initial_labeling, adj, objective)
+TS = np.arange(0, 1.01, 0.1)
 
-pops_district = np.matmul(labeling, populations)
-dems_district = np.matmul(labeling, voter_data[0])
-print(dems_district/pops_district)
+for t in TS:
+    def comb_objective(labeling):
+        return ((1-t) * objective(labeling)) + (t * pop_objective(labeling))
 
-np.save('runs/OH/sa-pps.npy', labeling)
+    labeling = simulated_annealing(initial_labeling, adj, comb_objective)
+
+    np.save('runs/PA/sa-pps-%s.npy' % str(t), labeling)
