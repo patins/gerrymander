@@ -1,5 +1,7 @@
 from parser import read_county_adjacency, read_election_data
 import numpy as np
+import math
+import random
 
 fips_to_county, fips_to_state, adjacent_counties = read_county_adjacency()
 election_data = read_election_data()
@@ -167,6 +169,48 @@ def neighbor(labeling, adjacency):
                     labeling[j_district, j] = 1
     return transitions
 
+def greedy_search(initial_labeling, adjacency, objective):
+    labeling = initial_labeling.copy()
+    best_obj = objective(labeling)
+    visited = set(label_hash(labeling))
+    while True:
+        labeling = search(labeling, adjacency, visited, objective)
+        cur_obj = objective(labeling)
+        print("objcetive = %f" % cur_obj)
+        if cur_obj <= best_obj:
+            return labeling
+        best_obj = cur_obj
+
+def simulated_annealing(initial_labeling, adjacency, objective):
+    labeling = initial_labeling.copy()
+    prev_obj = objective(labeling)
+
+    T = 1.0
+    T_min = 0.000001
+    alpha = 0.9
+
+    while T > T_min:
+        i = 1
+        candidates = None
+        while i <= 100:
+            if candidates == None:
+                candidates = neighbor(labeling, adjacency)
+            new_labeling = random.choice(candidates)
+            labeling[new_labeling[1], new_labeling[0]] = 0
+            labeling[new_labeling[2], new_labeling[0]] = 1
+            new_obj = objective(labeling)
+            ap = math.e ** ((new_obj - prev_obj)/T)
+            if ap > random.random():
+                print("SWITCH old %f new %f" % (prev_obj, new_obj))
+                prev_obj = new_obj
+                candidates = None
+            else:
+                labeling[new_labeling[2], new_labeling[0]] = 0
+                labeling[new_labeling[1], new_labeling[0]] = 1
+            i += 1
+        T *= alpha
+        print(T)
+    return labeling
 
 def label_hash(labeling):
     return labeling.data.tobytes()
